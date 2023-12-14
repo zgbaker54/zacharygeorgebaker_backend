@@ -65,7 +65,7 @@ Create a new lambda function on AWS Lambda. Create this function from a `Contain
 
 ### Creating the API
 
-In AWS API Gateway Create a REST API (click Create API then the Build button under REST API). Name it and make it regional (and make sure you're under the AWS region you want). Then click the Create Method button. Set Method type to ANY, set Integration Type to Lambda function, make sure Lambda proxy integration is off, and enter the ARN of the Lambda made in the previous step. After the method is created navigate to the Method's Test tab and run a test to make sure the method works as expected. Then click Deploy API and assign it a stage (for example `dev`). Then navigate to the API's Stages and copy the Invoke URL. Test on postman or a browser to make sure that this URL works. If so, then the backend is working and can be used!
+In AWS API Gateway Create a REST API (click Create API then the Build button under REST API). Name it and make it regional (and make sure you're under the AWS region you want). Then click the Create Method button. Set Method type to ANY, set Integration Type to Lambda function, make sure Lambda proxy integration is off, and enter the ARN of the Lambda made in the previous step. After the method is created navigate to the Method's Test tab and run a test to make sure the method works as expected. Then click Deploy API and assign it a stage (for example `dev`). Then navigate to the API's Stages and copy the Invoke URL. Test on postman or a browser to make sure that this URL works. If so, then the backend is working and can be used! Finally, to enable local development of the frontend, under the API's Resources click Enable CORS and accept the default settings to create an OPTIONS resource. This will allow localhost to hit the API. Once you've done this be sure to click the Deploy API button to redeploy.
 
 <br/>
 
@@ -73,3 +73,23 @@ In AWS API Gateway Create a REST API (click Create API then the Build button und
 
 - For the `regfigs` method the Lambda needs GetObject (for signed url generation) and PutObject S3 permisions
 - After building a local Docker container you can run it with `docker run -p 9000:8080 zacharygeorgebaker_backend:v1.0.0` and then hit the url `http://localhost:9000/2015-03-31/functions/function/invocations` in postman or curl for local testing (though I've found difficulty getting AWS permissions here).
+- When using signed URLs to fetch objects from S3, you need to consider CORS for local development. In the S3 bucket on AWS under the Permissions tab use this for the CORS configuration:
+
+```
+[
+    {
+        "AllowedHeaders": [
+            "*"
+        ],
+        "AllowedMethods": [
+            "GET",
+            "PUT",
+            "POST"
+        ],
+        "AllowedOrigins": [
+            "*"
+        ],
+        "ExposeHeaders": []
+    }
+]
+```
