@@ -41,7 +41,7 @@ cors_headers = {
 def testGet():
     print("testGet")
     response = Response(
-        json.dumps({"test": "testGet v1.0.3"}),
+        json.dumps({"test": "testGet"}),
         status=201,
         content_type="application/json",
         headers=cors_headers,
