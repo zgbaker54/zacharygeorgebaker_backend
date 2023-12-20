@@ -161,32 +161,26 @@ def digitNN():
 
     # get handwritten digit
     payload = request.json
-    image_data = payload.get('image_data', None)
-    width = payload.get('width', None)
-    height = payload.get('height', None)
-    if image_data is None:
-        raise AssertionError('No image_data found in payload.')
-    if width != height:
-        raise AssertionError(f'image_data must be square - width={width}, height={height}')
-    image_data = [image_data[str(x)] for x in range(len(image_data))]
-    image_data = np.array(image_data)
-    image_data = np.reshape(image_data, (width, height, 4))
-    image_data = np.squeeze(image_data[:, :, 3])
+    image_array = payload.get('image_array', None)
+    if image_array is None:
+        raise AssertionError('No image_array found in payload.')
+    image_array = np.array(image_array, dtype=int)
+    if len(image_array.shape) != 2 or image_array.shape[0] != image_array.shape[1]:
+        raise AssertionError(f'Invalid image_array shape - {image_array.shape}')
 
     # interpolate image to 28x28 to match model input
-    x = np.arange(start=0, stop=width, dtype=int)
-    y = np.arange(start=0, stop=height, dtype=int)
-    interp = scipy.interpolate.RegularGridInterpolator(points=(x, y), values=image_data)
-    xq = np.linspace(start=0, stop=501, num=28, dtype=int)
-    yq = np.linspace(start=0, stop=501, num=28, dtype=int)
+    x = np.arange(start=0, stop=image_array.shape[0], dtype=int)
+    y = np.arange(start=0, stop=image_array.shape[1], dtype=int)
+    interp = scipy.interpolate.RegularGridInterpolator(points=(x, y), values=image_array)
+    xq = np.linspace(start=0, stop=image_array.shape[0] - 1, num=28, dtype=int)
+    yq = np.linspace(start=0, stop=image_array.shape[1] - 1, num=28, dtype=int)
     qs = []
     for x in xq:
         for y in yq:
             qs.append([x, y])
     val = interp(qs)
-    image_data = val.reshape((28, 28))
-    image_data /= 255
-    image_data = np.expand_dims(image_data, axis=0)
+    image_array = val.reshape((28, 28))
+    image_array = np.expand_dims(image_array, axis=0)
 
     # use model to predict
     mnd = MNISTDigit(
@@ -194,7 +188,7 @@ def digitNN():
         use_black_and_white_data=True,
         force_load=True,
     )
-    prediction = int(mnd.predict(image_data)[0])
+    prediction = int(mnd.predict(image_array)[0])
 
     # finish and return prediction
     print('digitNN method finished')
