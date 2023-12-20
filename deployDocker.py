@@ -11,7 +11,7 @@ import pyperclip
 region = "us-west-1"
 ecr_url = f"096206771424.dkr.ecr.{region}.amazonaws.com"
 ecr_repository_name = "zacharygeorgebaker_backend"
-image_tag = "v1.0.3"
+image_tag = "v1.0.4"
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------
 

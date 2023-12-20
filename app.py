@@ -11,7 +11,6 @@ import datetime
 from flask import Flask, Response, request
 from flask_cors import CORS
 import serverless_wsgi
-from digits import MNISTDigit
 
 
 # flask
@@ -157,6 +156,7 @@ def regfigs():
 # route that uses a neural network to predict a handwritten digit
 @app.route('/digitNN', methods=['POST'])
 def digitNN():
+    from digits import MNISTDigit
     print('digitNN method called')
 
     # get handwritten digit
