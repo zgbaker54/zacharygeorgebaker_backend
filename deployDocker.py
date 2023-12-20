@@ -52,8 +52,10 @@ for image in [local_docker_image, ecr_docker_image]:
 resp = ECR_CLIENT.list_images(repositoryName=ecr_repository_name)
 image_tags = [x['imageTag'] for x in resp.get('imageIds', [])]
 if image_tag in image_tags:
-    image_tags.sort()
-    raise AssertionError(f"Image tag {image_tag} detected in repository. Increment the tag or remove the existing image from the repository. {image_tags}")
+    resp = input(f"\nImage tag {image_tag} detected in repository. If you continue pushing the image will be overwritten. Continue? [y/n] ")
+    if resp.lower() != 'y':
+        image_tags.sort()
+        raise AssertionError(f"Image tag {image_tag} detected in repository. Increment the tag or remove the existing image from the repository. {image_tags}")
 
 # get ECR token
 resp = subprocess.run(["aws", "ecr", "get-login-password", "--region", region], capture_output=True)
