@@ -10,7 +10,12 @@ RUN pip install -r requirements.txt
 # Copy function code
 COPY app.py ${LAMBDA_TASK_ROOT}
 
+# Copy digits.py and digit keras model
+COPY digits.py ${LAMBDA_TASK_ROOT}
+COPY digit_nn_model.keras ${LAMBDA_TASK_ROOT}
+
+# set content type in an env var
 ENV CONTENT_TYPE=application/json
 
-# Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
-CMD [ "app.regfigs" ]
+# Set the CMD to the handler (this is what the docker container runs)
+CMD [ "app.handler" ]

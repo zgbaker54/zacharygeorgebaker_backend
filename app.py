@@ -3,11 +3,21 @@ import json
 import boto3
 import numpy as np
 import scipy.optimize
+import scipy.interpolate
 import matplotlib
 import matplotlib.pyplot as plt
 import io
 import datetime
+from flask import Flask, Response, request
+from flask_cors import CORS
+import serverless_wsgi
+from digits import MNISTDigit
 
+
+# flask
+app = Flask(__name__)
+if __name__ == '__main__':
+    CORS(app)
 
 # boto3 setup
 SESSION = boto3.Session()
@@ -17,17 +27,51 @@ BUCKET = "zacharygeorgebaker-regfigs"
 # matplotlib setup
 matplotlib.use('agg')
 
+# CORS headers for local development
+cors_headers = {
+    "Access-Control-Allow-Headers" : "Content-Type",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
+}
+# NOTE: dict(headers, **cors_headers) can be used to easily merge 2 dictionaries (with priority given to the items in the dict passed with **)
 
-def regfigs(event, context):
-    # a function to generate regression sample figures based on the payload posted
-    # uploads figures as png files to the zacharygeorgebaker-regfigs S3 bucket and then returns a signed url for the figure
 
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# test route (GET)
+@app.route('/testGet', methods=['GET'])
+def testGet():
+    print("testGet")
+    response = Response(
+        json.dumps({"test": "testGet v1.0.3"}),
+        status=201,
+        content_type="application/json",
+        headers=cors_headers,
+    )
+    return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# test route (POST)
+@app.route('/testPost', methods=['POST'])
+def testPost():
+    print("testPost")
+    response = Response(
+        json.dumps({"test": "testPost", "body": request.json}),
+        status=201,
+        content_type="application/json",
+        headers=cors_headers,
+    )
+    return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# route to generate regression sample figures based on the payload posted;
+# uploads figures as png files to the zacharygeorgebaker-regfigs S3 bucket and then returns a signed url for the figure
+@app.route('/regfigs', methods=['POST'])
+def regfigs():
     print('regfigs method called')
-    print(f'event: {event}')
-    print(f'context: {context}')
 
     # get data and regression type requested
-    payload = event
+    payload = request.json
+    print(f"payload: {payload}")
     data_type = payload.get('data_type', 'linear')
     regress_type = payload.get('regress_type', 'linear')
 
@@ -100,6 +144,76 @@ def regfigs(event, context):
     )
 
     # return response
-    response = {'signed_url': signed_url}
+    response = Response(
+        json.dumps({'signed_url': signed_url}),
+        status=200,
+        content_type="application/json",
+        headers=cors_headers,
+    )
     print(f'regfigs method returning: {response}')
     return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# route that uses a neural network to predict a handwritten digit
+@app.route('/digitNN', methods=['POST'])
+def digitNN():
+    print('digitNN method called')
+
+    # get handwritten digit
+    payload = request.json
+    image_data = payload.get('image_data', None)
+    width = payload.get('width', None)
+    height = payload.get('height', None)
+    if image_data is None:
+        raise AssertionError('No image_data found in payload.')
+    if width != height:
+        raise AssertionError(f'image_data must be square - width={width}, height={height}')
+    image_data = [image_data[str(x)] for x in range(len(image_data))]
+    image_data = np.array(image_data)
+    image_data = np.reshape(image_data, (width, height, 4))
+    image_data = np.squeeze(image_data[:, :, 3])
+
+    # interpolate image to 28x28 to match model input
+    x = np.arange(start=0, stop=width, dtype=int)
+    y = np.arange(start=0, stop=height, dtype=int)
+    interp = scipy.interpolate.RegularGridInterpolator(points=(x, y), values=image_data)
+    xq = np.linspace(start=0, stop=501, num=28, dtype=int)
+    yq = np.linspace(start=0, stop=501, num=28, dtype=int)
+    qs = []
+    for x in xq:
+        for y in yq:
+            qs.append([x, y])
+    val = interp(qs)
+    image_data = val.reshape((28, 28))
+    image_data /= 255
+    image_data = np.expand_dims(image_data, axis=0)
+
+    # use model to predict
+    mnd = MNISTDigit(
+        new_model=False,
+        use_black_and_white_data=True,
+        force_load=True,
+    )
+    prediction = int(mnd.predict(image_data)[0])
+
+    # finish and return prediction
+    print('digitNN method finished')
+    response = Response(
+        json.dumps({"prediction": prediction}),
+        status=200,
+        content_type="application/json",
+        headers=cors_headers,
+    )
+    return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# handler function to accomodate Dockerized Flask Application - see Dockerfile: CMD [ "app.handler" ]
+def handler(event, context):
+    print(f"event: {event}")
+    print(f"context: {context}")
+    return serverless_wsgi.handle_request(app, event, context)
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# run this script to run the flask app on a local server
+if __name__ == "__main__":
+    app.run(port=8000, debug=True)
