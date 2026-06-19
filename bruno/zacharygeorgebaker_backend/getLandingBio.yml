@@ -1,0 +1,14 @@
+info:
+  name: getLandingBio
+  type: http
+  seq: 5
+
+http:
+  method: get
+  url: "{{baseUrl}}/getLandingBio"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

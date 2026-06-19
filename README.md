@@ -3,6 +3,21 @@ Dockerized Flask backend for zacharygeorgebaker.com using AWS ECR, Lambda, and A
 
 <br/>
 
+## Table of Contents
+
+- [Install venv for development](#install-venv-for-development)
+- [Run the backend locally](#run-the-backend-locally)
+- [Deploying to AWS](#deploying-to-aws)
+  - [Quick Deploy](#quick-deploy)
+  - [Manual Deploy](#manual-deploy-without-the-script)
+- [Creating this backend](#creating-this-backend)
+  - [Write a serverless flask app in python](#write-a-serverless-flask-app-in-python)
+  - [Building the Docker image pointed at the `handler` function in `app.py` and pushing to ECR](#building-the-docker-image-pointed-at-the-handler-function-in-apppy-and-pushing-to-ecr)
+  - [Creating the lambda function](#creating-the-lambda-function)
+  - [Creating the API](#creating-the-api)
+
+<br/>
+
 ## Install venv for development
 
 (You can get brew <a href=https://brew.sh>here</a>)
@@ -23,6 +38,72 @@ For local development you should also install `tensorflow-metal`. This dependenc
 ```
 pip install tensorflow-metal;
 ```
+
+<br/>
+
+## Run the backend locally
+
+To run the Flask backend on your local machine for development and testing:
+
+```
+source venv/bin/activate;
+python app.py;
+```
+
+This starts the Flask development server on `http://localhost:8000`. The server will reload automatically when you make changes to `app.py`.
+
+You can test the available routes using [Bruno](https://www.usebruno.com/).
+
+<br/>
+
+## Deploying to AWS
+
+This project uses Docker, AWS ECR, Lambda, and API Gateway for deployment. The `deployDocker.py` script automates building and pushing the Docker image to ECR.
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- [AWS CLI](https://aws.amazon.com/cli/) installed and configured with appropriate credentials
+- Python 3.11+ with `boto3` and `pyperclip` installed (`pip install boto3 pyperclip`)
+- An existing ECR repository named `zacharygeorgebaker_backend` in your AWS account
+
+### Quick Deploy
+
+1. **Update the image tag** in `deployDocker.py`:
+   ```python
+   image_tag = "v1.0.5"  # increment this for each deployment
+   ```
+
+2. **Run the deploy script**:
+   ```
+   python deployDocker.py
+   ```
+
+   The script will:
+   - Check for existing local Docker images with the same tag and prompt to delete them
+   - Check if the image tag already exists in the ECR repository
+   - Generate and copy the Docker build/push commands to your clipboard
+
+3. **Run the generated commands** in your terminal (paste from clipboard):
+   ```
+   docker build -t zacharygeorgebaker_backend:v1.0.5 .;
+   docker login -u AWS -p <token> 096206771424.dkr.ecr.us-west-1.amazonaws.com/zacharygeorgebaker_backend;
+   docker tag zacharygeorgebaker_backend:v1.0.5 096206771424.dkr.ecr.us-west-1.amazonaws.com/zacharygeorgebaker_backend:v1.0.5;
+   docker push 096206771424.dkr.ecr.us-west-1.amazonaws.com/zacharygeorgebaker_backend:v1.0.5;
+   ```
+
+   Pushing can take a while if there are big dependencies (like TensorFlow). Be patient.
+
+4. **Update the Lambda function** to use the new image:
+   - Go to AWS Lambda console
+   - Select the `zacharygeorgebaker_backend` function
+   - Click **Deploy new image**
+   - Enter the new image URI: `096206771424.dkr.ecr.us-west-1.amazonaws.com/zacharygeorgebaker_backend:v1.0.5`
+   - Click **Save**
+
+### Manual Deploy (without the script)
+
+If you prefer to deploy manually, follow the steps in the [Building the Docker image](#building-the-docker-image-pointed-at-the-handler-function-in-apppy-and-pushing-to-ecr) section below.
 
 <br/>
 

@@ -11,6 +11,7 @@ import datetime
 from flask import Flask, Response, request
 from flask_cors import CORS
 import serverless_wsgi
+from utils.utils import GetValueFromDb
 
 
 # flask
@@ -18,10 +19,6 @@ app = Flask(__name__)
 if __name__ == '__main__':
     CORS(app)
 
-# boto3 setup
-SESSION = boto3.Session()
-S3_CLIENT = SESSION.client('s3')
-BUCKET = "zacharygeorgebaker-regfigs"
 
 # matplotlib setup
 matplotlib.use('agg')
@@ -49,6 +46,19 @@ def testGet():
     return response
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------
+# keep alive route (GET)
+@app.route('/ping', methods=['GET'])
+def ping():
+    print("ping")
+    response = Response(
+        json.dumps({"status": "ok"}),
+        status=200,
+        content_type="application/json",
+        headers=cors_headers,
+    )
+    return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
 # test route (POST)
 @app.route('/testPost', methods=['POST'])
 def testPost():
@@ -67,6 +77,10 @@ def testPost():
 @app.route('/regfigs', methods=['POST'])
 def regfigs():
     print('regfigs method called')
+
+    # boto3 setup
+    s3_client = boto3.Session().client('s3')
+    bucket = 'zacharygeorgebaker-regfigs'
 
     # get data and regression type requested
     payload = request.json
@@ -126,17 +140,17 @@ def regfigs():
 
     # upload to S3
     key = f"regfig__{str(datetime.datetime.now()).replace(' ', '_')}.png"
-    S3_CLIENT.put_object(
+    s3_client.put_object(
         Body=figure_bytes,
-        Bucket=BUCKET,
+        Bucket=bucket,
         Key=key,
     )
 
     # get signed URL
-    signed_url = S3_CLIENT.generate_presigned_url(
+    signed_url = s3_client.generate_presigned_url(
         ClientMethod='get_object',
         Params={
-            'Bucket': BUCKET,
+            'Bucket': bucket,
             'Key': key,
         },
         ExpiresIn=3600,
@@ -194,6 +208,32 @@ def digitNN():
     print('digitNN method finished')
     response = Response(
         json.dumps({"prediction": prediction}),
+        status=200,
+        content_type="application/json",
+        headers=cors_headers,
+    )
+    return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# route to get the landing bio from the dynamoDB database
+@app.route('/getLandingBio', methods=['GET'])
+def getLandingBio():
+    print('getLandingBio called')
+    response = Response(
+        json.dumps({"landingBio": GetValueFromDb("LandingBio")}),
+        status=200,
+        content_type="application/json",
+        headers=cors_headers,
+    )
+    return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# route to get the resume link from the dynamoDB database
+@app.route('/getResumeLink', methods=['GET'])
+def getResumeLink():
+    print('getResumeLink called')
+    response = Response(
+        json.dumps({"resumeLink": GetValueFromDb("ResumeLink")}),
         status=200,
         content_type="application/json",
         headers=cors_headers,
