@@ -17,6 +17,7 @@ if __name__ == '__main__':
 
 # Allow your specific frontend domain to make API calls
 CORS(app, origins=[
+    "http://localhost:5173"
     "https://zacharygeorgebaker.com"
 ])
 
