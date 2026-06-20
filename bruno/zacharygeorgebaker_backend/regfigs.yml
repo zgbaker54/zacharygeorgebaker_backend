@@ -1,0 +1,22 @@
+info:
+  name: regfigs
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/regfigs"
+  body:
+    type: json
+    data: |-
+      {
+        "data_type": "exponential",
+        "regress_type": "exponential"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

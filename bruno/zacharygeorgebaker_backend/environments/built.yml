@@ -1,0 +1,4 @@
+name: built
+variables:
+  - name: baseUrl
+    value: 0.0.0.0:8000

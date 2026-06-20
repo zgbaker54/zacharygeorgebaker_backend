@@ -1,36 +1,24 @@
 import json
-import json
-import boto3
-import numpy as np
-import scipy.optimize
-import scipy.interpolate
-import matplotlib
-import matplotlib.pyplot as plt
-import io
-import datetime
 from flask import Flask, Response, request
 from flask_cors import CORS
 import serverless_wsgi
-from utils.utils import GetValueFromDb
+from src.utils.utils import GetValueFromDb
+from src.regfigs import generate_regfig
+from dotenv import load_dotenv
 
+
+# load env vars from a .env file if present
+load_dotenv()
 
 # flask
 app = Flask(__name__)
 if __name__ == '__main__':
     CORS(app)
 
-
-# matplotlib setup
-matplotlib.use('agg')
-
-# CORS headers for local development
-cors_headers = {
-    "Access-Control-Allow-Headers" : "Content-Type",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
-}
-# NOTE: dict(headers, **cors_headers) can be used to easily merge 2 dictionaries (with priority given to the items in the dict passed with **)
-
+# Allow your specific frontend domain to make API calls
+CORS(app, origins=[
+    "https://zacharygeorgebaker.com"
+])
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------
 # test route (GET)
@@ -41,7 +29,6 @@ def testGet():
         json.dumps({"test": "testGet"}),
         status=201,
         content_type="application/json",
-        headers=cors_headers,
     )
     return response
 
@@ -54,7 +41,6 @@ def ping():
         json.dumps({"status": "ok"}),
         status=200,
         content_type="application/json",
-        headers=cors_headers,
     )
     return response
 
@@ -67,7 +53,6 @@ def testPost():
         json.dumps({"test": "testPost", "body": request.json}),
         status=201,
         content_type="application/json",
-        headers=cors_headers,
     )
     return response
 
@@ -77,140 +62,14 @@ def testPost():
 @app.route('/regfigs', methods=['POST'])
 def regfigs():
     print('regfigs method called')
-
-    # boto3 setup
-    s3_client = boto3.Session().client('s3')
-    bucket = 'zacharygeorgebaker-regfigs'
-
-    # get data and regression type requested
     payload = request.json
     print(f"payload: {payload}")
-    data_type = payload.get('data_type', 'linear')
-    regress_type = payload.get('regress_type', 'linear')
-
-    # get x and y data
-    x_data = np.arange(100, dtype=float)
-    y_data = x_data.copy()
-    if data_type == 'linear':
-        data_coeff = np.random.uniform(0.01, 10, 2)
-        y_data = y_data * data_coeff[0] + data_coeff[1]
-    elif data_type == 'exponential':
-        data_coeff = np.random.uniform(0.01, 0.05, 3)
-        y_data = y_data ** 2  * data_coeff[0] + y_data * data_coeff[1] + data_coeff[2]
-    else:
-        raise AssertionError(f'Invalid data_type - {data_type}')
-
-    # add gaussian noise
-    y_data += np.random.normal(0.0, scale=10.0, size=len(y_data))
-
-    # define regression
-    if regress_type == 'linear':
-        regression_func = lambda x, *args: x * args[0] + args[1]
-        x0 = (0, 0)
-    elif regress_type == 'exponential':
-        regression_func = lambda x, *args: x ** 2 * args[0] + x * args[1] + args[2]
-        x0 = (0, 0, 0)
-    else:
-        raise AssertionError(f'Invalid data_type - {data_type}')
-
-    # fit
-    fit_coeff = scipy.optimize.fmin(
-        lambda X: np.sum([np.abs(regression_func(x_val, *X) - y_val) for x_val, y_val in zip(x_data, y_data)]),
-        x0=x0
-    )
-
-    # get fit data
-    fit_x = np.linspace(start=np.min(x_data), stop=np.max(x_data), num=len(x_data) * 100)
-    fit_y = [regression_func(x_val, *fit_coeff) for x_val in fit_x]
-
-    # plot
-    plt.figure(figsize=(8, 6))
-    data_coeff = [np.around(n, decimals=2) for n in data_coeff]  # make coefficients readable
-    fit_coeff = [np.around(n, decimals=2) for n in fit_coeff]  # make coefficients readable
-    plt.plot(x_data, y_data, 'o', label=f'Sample Data ({data_type}) coeff: {data_coeff}')
-    plt.plot(fit_x, fit_y, 'k-', label=f'Regression ({regress_type}) coeff: {fit_coeff}')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.legend()
-    plt.title('Regress Sample Data')
-    byte_stream = io.BytesIO()
-    plt.savefig(byte_stream, format='png')
-    plt.close('all')
-    figure_bytes = byte_stream.getvalue()
-
-    # upload to S3
-    key = f"regfig__{str(datetime.datetime.now()).replace(' ', '_')}.png"
-    s3_client.put_object(
-        Body=figure_bytes,
-        Bucket=bucket,
-        Key=key,
-    )
-
-    # get signed URL
-    signed_url = s3_client.generate_presigned_url(
-        ClientMethod='get_object',
-        Params={
-            'Bucket': bucket,
-            'Key': key,
-        },
-        ExpiresIn=3600,
-    )
-
-    # return response
+    signed_url = generate_regfig(payload)
+    print(f'regfigs method returning signed_url: {signed_url}')
     response = Response(
         json.dumps({'signed_url': signed_url}),
         status=200,
         content_type="application/json",
-        headers=cors_headers,
-    )
-    print(f'regfigs method returning: {response}')
-    return response
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------
-# route that uses a neural network to predict a handwritten digit
-@app.route('/digitNN', methods=['POST'])
-def digitNN():
-    from digits import MNISTDigit
-    print('digitNN method called')
-
-    # get handwritten digit
-    payload = request.json
-    image_array = payload.get('image_array', None)
-    if image_array is None:
-        raise AssertionError('No image_array found in payload.')
-    image_array = np.array(image_array, dtype=int)
-    if len(image_array.shape) != 2 or image_array.shape[0] != image_array.shape[1]:
-        raise AssertionError(f'Invalid image_array shape - {image_array.shape}')
-
-    # interpolate image to 28x28 to match model input
-    x = np.arange(start=0, stop=image_array.shape[0], dtype=int)
-    y = np.arange(start=0, stop=image_array.shape[1], dtype=int)
-    interp = scipy.interpolate.RegularGridInterpolator(points=(x, y), values=image_array)
-    xq = np.linspace(start=0, stop=image_array.shape[0] - 1, num=28, dtype=int)
-    yq = np.linspace(start=0, stop=image_array.shape[1] - 1, num=28, dtype=int)
-    qs = []
-    for x in xq:
-        for y in yq:
-            qs.append([x, y])
-    val = interp(qs)
-    image_array = val.reshape((28, 28))
-    image_array = np.expand_dims(image_array, axis=0)
-
-    # use model to predict
-    mnd = MNISTDigit(
-        new_model=False,
-        use_black_and_white_data=True,
-        force_load=True,
-    )
-    prediction = int(mnd.predict(image_array)[0])
-
-    # finish and return prediction
-    print('digitNN method finished')
-    response = Response(
-        json.dumps({"prediction": prediction}),
-        status=200,
-        content_type="application/json",
-        headers=cors_headers,
     )
     return response
 
@@ -223,7 +82,6 @@ def getLandingBio():
         json.dumps({"landingBio": GetValueFromDb("LandingBio")}),
         status=200,
         content_type="application/json",
-        headers=cors_headers,
     )
     return response
 
@@ -236,7 +94,6 @@ def getResumeLink():
         json.dumps({"resumeLink": GetValueFromDb("ResumeLink")}),
         status=200,
         content_type="application/json",
-        headers=cors_headers,
     )
     return response
 
