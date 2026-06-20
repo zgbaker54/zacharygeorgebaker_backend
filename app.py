@@ -16,7 +16,7 @@ app = Flask(__name__)
 # Allow your specific frontend domains to make API calls
 CORS(app, origins=[
     "http://localhost:5173",
-    "https://zacharygeorgebaker.com"
+    "https://www.zacharygeorgebaker.com",
 ])
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------
