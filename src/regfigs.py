@@ -58,8 +58,8 @@ def generate_regfig(payload: dict) -> str:
 
     # plot
     plt.figure(figsize=(8, 6))
-    data_coeff_display = [np.around(n, decimals=2) for n in data_coeff]
-    fit_coeff_display = [np.around(n, decimals=2) for n in fit_coeff]
+    data_coeff_display = [float(np.around(n, decimals=2)) for n in data_coeff]
+    fit_coeff_display = [float(np.around(n, decimals=2)) for n in fit_coeff]
     plt.plot(x_data, y_data, 'o', label=f'Sample Data ({data_type}) coeff: {data_coeff_display}')
     plt.plot(fit_x, fit_y, 'k-', label=f'Regression ({regress_type}) coeff: {fit_coeff_display}')
     plt.xlabel('X')
