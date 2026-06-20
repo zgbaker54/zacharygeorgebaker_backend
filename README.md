@@ -64,4 +64,15 @@ curl http://localhost:8000/ping
 
 Or use [Bruno](https://www.usebruno.com/) to test the available routes.
 
-## Deploying to AWS
+## Deploying to Railway
+
+The API is deployed on Railway at the following URLs:
+
+- **Project URL:** [https://railway.com/project/a756962e-ad7e-4d7b-b0e3-8ecb132d2f3e](https://railway.com/project/a756962e-ad7e-4d7b-b0e3-8ecb132d2f3e)
+- **API Domain URL:** [https://zacharygeorgebakerbackend-production.up.railway.app](https://zacharygeorgebakerbackend-production.up.railway.app)
+
+You can test the API endpoints using the deployed URL:
+
+```
+curl https://zacharygeorgebakerbackend-production.up.railway.app/ping
+```
