@@ -12,12 +12,10 @@ load_dotenv()
 
 # flask
 app = Flask(__name__)
-if __name__ == '__main__':
-    CORS(app)
 
-# Allow your specific frontend domain to make API calls
+# Allow your specific frontend domains to make API calls
 CORS(app, origins=[
-    "http://localhost:5173"
+    "http://localhost:5173",
     "https://zacharygeorgebaker.com"
 ])
 
