@@ -2,7 +2,7 @@ import json
 from flask import Flask, Response, request
 from flask_cors import CORS
 import serverless_wsgi
-from src.utils.utils import GetValueFromDb
+from src.utils.utils import GetValueFromDb, GetWordOfTheDay, IsValidWord
 from src.regfigs import generate_regfig
 from dotenv import load_dotenv
 
@@ -91,6 +91,35 @@ def getResumeLink():
     print('getResumeLink called')
     response = Response(
         json.dumps({"resumeLink": GetValueFromDb("ResumeLink")}),
+        status=200,
+        content_type="application/json",
+    )
+    return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# route to get today's word of the day from the ZacharyGeorgeBaker-7Letters DynamoDB table
+@app.route('/getWordOfTheDay', methods=['GET'])
+def getWordOfTheDay():
+    print('getWordOfTheDay called')
+    word = GetWordOfTheDay()
+    print(f"word of the day: {word}")
+    response = Response(
+        json.dumps({"wordOfTheDay": word}),
+        status=200,
+        content_type="application/json",
+    )
+    return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# route to check if a word is a valid 7-letter word (GET)
+@app.route('/validate7LetterWord', methods=['GET'])
+def validate7LetterWord():
+    print('validate7LetterWord called')
+    word = request.args.get('word', '').strip().lower()
+    is_valid = IsValidWord(word)
+    print(f"word: '{word}' -> valid: {is_valid}")
+    response = Response(
+        json.dumps({"word": word, "isValid": is_valid}),
         status=200,
         content_type="application/json",
     )
