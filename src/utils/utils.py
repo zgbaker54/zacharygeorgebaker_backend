@@ -38,9 +38,9 @@ def IsValidWord(word: str) -> bool:
     return word in _VALID_7_LETTER_WORDS
 
 
-# get today's word from the ZacharyGeorgeBaker-7Letters table
-def GetWordOfTheDay() -> str:
-    word = ""
+# get today's word and date from the ZacharyGeorgeBaker-7Letters table
+def GetWordOfTheDay() -> dict:
+    result = {"word": "", "date": ""}
     try:
         db_resource = boto3.Session().resource('dynamodb', region_name='us-west-1')
         db_table = db_resource.Table('ZacharyGeorgeBaker-7Letters')
@@ -52,8 +52,9 @@ def GetWordOfTheDay() -> str:
             }
         )
         if 'Item' in resp:
-            word = resp['Item']['Word']
+            result["word"] = resp['Item']['Word']
+            result["date"] = resp['Item']['Date']
         print(resp)
     finally:
         pass
-    return word
+    return result

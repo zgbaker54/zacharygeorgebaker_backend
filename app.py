@@ -101,10 +101,10 @@ def getResumeLink():
 @app.route('/getWordOfTheDay', methods=['GET'])
 def getWordOfTheDay():
     print('getWordOfTheDay called')
-    word = GetWordOfTheDay()
-    print(f"word of the day: {word}")
+    result = GetWordOfTheDay()
+    print(f"word of the day: {result}")
     response = Response(
-        json.dumps({"wordOfTheDay": word}),
+        json.dumps({"wordOfTheDay": result["word"], "date": result["date"]}),
         status=200,
         content_type="application/json",
     )
