@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 4. Copy your application assets and code
 COPY app.py .
 COPY src/ src/
+COPY wordList7Letters.txt .
 
 # 5. Set fallback configuration environment variables
 ENV CONTENT_TYPE=application/json
