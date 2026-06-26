@@ -17,7 +17,13 @@ load_dotenv()
 app = Flask(__name__)
 
 # Allow your specific frontend domains to make API calls
-CORS(app, origins=os.environ["CORS_ORIGINS"].split(","))
+cors_origins = os.environ.get("CORS_ORIGINS")
+if not cors_origins:
+    raise RuntimeError(
+        "CORS_ORIGINS environment variable is not set. "
+        "Set it to a comma-separated list of allowed origins (e.g. 'https://example.com,https://app.example.com')"
+    )
+CORS(app, origins=cors_origins.split(","))
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------
 # test route (GET)
