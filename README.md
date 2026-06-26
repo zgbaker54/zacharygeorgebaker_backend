@@ -3,12 +3,33 @@ Dockerized Flask backend for zacharygeorgebaker.com using AWS ECR, Lambda, and A
 
 ## Table of Contents
 
+- [Local development setup](#local-development-setup)
 - [Install venv for development](#install-venv-for-development)
 - [Run the backend locally](#run-the-backend-locally)
 - [Build and run with Docker](#build-and-run-with-docker)
 - [Deploying to Railway](#deploying-to-railway)
 - [Adding words to the 7Letters game database](#adding-words-to-the-7letters-game-database)
 
+
+## Local development setup
+
+The app reads a few environment variables from a `.env` file at startup. Create a `.env` file in the project root with the following values to get started:
+
+```env
+AWS_ACCESS_KEY_ID=*****
+AWS_SECRET_ACCESS_KEY=*****
+AWS_DEFAULT_REGION=us-west-1
+CORS_ORIGINS=http://localhost:5173,http://192.168.4.98:5173,https://www.zacharygeorgebaker.com
+```
+
+> **Note:**
+> - `CORS_ORIGINS` is required and must be a comma-separated list of allowed frontend origins. If missing, the app will crash on startup.
+> - The app also makes calls to DynamoDB to fetch the word of the day, landing bio, and resume link. To obtain valid credentials:
+> 1. Go to the [AWS IAM Console](https://console.aws.amazon.com/iam/) → **Users** → click your username → **Security credentials** tab.
+> 2. Under **Access keys**, click **Create access key**.
+> 3. Choose **Application running outside AWS** and follow the prompts.
+> 4. Copy the **Access key ID** and **Secret access key** into your `.env` file.
+> 5. Ensure the IAM user has read access to the `ZacharyGeorgeBaker-Assets` and `ZacharyGeorgeBaker-7Letters` DynamoDB tables.
 
 ## Install venv for development
 

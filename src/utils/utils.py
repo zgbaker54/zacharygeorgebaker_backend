@@ -1,5 +1,6 @@
 import boto3
 from datetime import datetime
+import copy
 
 
 # load all valid 7-letter words into a set for fast lookups
@@ -28,7 +29,7 @@ def GetValueFromDb(key: str) -> str:
         if 'Item' in resp:
             value = resp['Item']['AssetValue']
         print(resp)
-    finally:
+    except Exception:
         pass
     return value
 
@@ -55,6 +56,50 @@ def GetWordOfTheDay() -> dict:
             result["word"] = resp['Item']['Word']
             result["date"] = resp['Item']['Date']
         print(resp)
-    finally:
+    except Exception:
         pass
     return result
+
+# annotate each guess in the provided guess sequence against today's word of the day;
+# returns the updated guess sequence and an optional snackbar message for invalid words
+def AnnotateGuessSequence(guessSequence: dict) -> tuple[dict, str]:
+    snackbarMessage = ""
+    wotdResp = GetWordOfTheDay()
+    date = wotdResp["date"]
+    answer = wotdResp["word"]
+    if len(answer) == 0:
+        raise AssertionError("No word of the day available")
+    if guessSequence['date'] != date:
+        raise AssertionError("Date mismatch during guess annotation")
+    for guess in guessSequence['guesses']:
+        guessWord = "".join(map(lambda guessLetter: guessLetter['letter'], guess['letters']))
+        if guess['submitted'] and guess['validWord'] is None:
+            if IsValidWord(guessWord.lower()):
+                guess['validWord'] = True
+                # annotate letters
+                guess['letters'] = annotateLetters(copy.deepcopy(guess['letters']), answer)
+            else:
+                guess['submitted'] = False
+                snackbarMessage = f"Invalid word: {guessWord.upper()}"
+    return (guessSequence, snackbarMessage)
+
+# evaluate each letter in a single guess against the answer and set the letter's
+# 'evaluation' field to 'exact', 'misplaced', or 'wrong'
+def annotateLetters(guessLetters, answerStr: str):
+    answer = list(answerStr)
+    exactIndexes = []
+    for (idx, guessLetter) in enumerate(guessLetters):
+        if guessLetter['letter'].upper() == answer[idx].upper():
+            guessLetters[idx]['evaluation'] = 'exact'
+            exactIndexes.append(idx)
+    for (idx, _) in enumerate(answer):
+        if idx in exactIndexes:
+            answer[idx] = ''
+    for (idx, guessLetter) in enumerate(guessLetters):
+        if idx in exactIndexes:
+            continue
+        if guessLetter['letter'] in answer:
+            guessLetter['evaluation'] = 'misplaced'
+        else:
+            guessLetter['evaluation'] = 'wrong'
+    return guessLetters

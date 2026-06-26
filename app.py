@@ -1,10 +1,13 @@
 import json
+import os
 from flask import Flask, Response, request
 from flask_cors import CORS
 import serverless_wsgi
-from src.utils.utils import GetValueFromDb, GetWordOfTheDay, IsValidWord
+from src.utils.utils import GetValueFromDb, GetWordOfTheDay, AnnotateGuessSequence
 from src.regfigs import generate_regfig
 from dotenv import load_dotenv
+import copy
+import traceback
 
 
 # load env vars from a .env file if present
@@ -14,11 +17,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Allow your specific frontend domains to make API calls
-CORS(app, origins=[
-    "http://localhost:5173",
-    "http://192.168.4.98:5173",
-    "https://www.zacharygeorgebaker.com",
-])
+CORS(app, origins=os.environ["CORS_ORIGINS"].split(","))
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------
 # test route (GET)
@@ -112,19 +111,45 @@ def getWordOfTheDay():
     return response
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------
-# route to check if a word is a valid 7-letter word (GET)
-@app.route('/validate7LetterWord', methods=['GET'])
-def validate7LetterWord():
-    print('validate7LetterWord called')
-    word = request.args.get('word', '').strip().lower()
-    is_valid = IsValidWord(word)
-    print(f"word: '{word}' -> valid: {is_valid}")
+# route to get today's word of the day from the ZacharyGeorgeBaker-7Letters DynamoDB table
+@app.route('/confirmWordOfTheDay', methods=['GET'])
+def confirmWordOfTheDay():
+    print('confirmWordOfTheDay called')
+    result = GetWordOfTheDay()
+    print(f"word of the day: {result}")
+    wordOfTheDayPresent = len(result["word"]) > 0
     response = Response(
-        json.dumps({"word": word, "isValid": is_valid}),
+        json.dumps({"wordOfTheDayPresent": wordOfTheDayPresent, "date": result["date"]}),
         status=200,
         content_type="application/json",
     )
     return response
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# receive a 7-letter wordle guess sequence from the frontend and annotate each guess letter
+# with its evaluation (exact, misplaced, or wrong) against the word of the day
+@app.route('/annotate7LettersGuessSequence', methods=['POST'])
+def annotate7LettersGuessSequence() -> Response:
+    try:
+        newGuessSequence, snackbarMessage = AnnotateGuessSequence(copy.deepcopy(request.json))
+        respBody = {
+            "guessSequence": newGuessSequence,
+            "snackbarMessage": snackbarMessage,
+        }
+        statusCode = 200
+    except Exception as e:
+        print("--- Detailed Error Report ---")
+        traceback.print_exc()
+        respBody = {"error": f"{e}"}
+        statusCode = 500
+    finally:
+        response = Response(
+            json.dumps(respBody),
+            status=statusCode,
+            content_type="application/json",
+        )
+    return response
+
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------
 # handler function to accomodate Dockerized Flask Application - see Dockerfile: CMD [ "app.handler" ]

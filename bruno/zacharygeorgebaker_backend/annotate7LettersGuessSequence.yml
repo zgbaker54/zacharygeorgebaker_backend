@@ -1,11 +1,10 @@
 info:
-  name: getWordOfTheDay
+  name: annotate7LettersGuessSequence
   type: http
-  seq: 1
 
 http:
-  method: GET
-  url: "{{baseUrl}}/getWordOfTheDay"
+  method: POST
+  url: "{{baseUrl}}/annotate7LettersGuessSequence"
   auth: inherit
 
 settings:
@@ -13,3 +12,4 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+​
