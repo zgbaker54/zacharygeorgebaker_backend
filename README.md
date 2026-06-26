@@ -1,5 +1,11 @@
 # zacharygeorgebaker_backend
-Dockerized Flask backend for zacharygeorgebaker.com using AWS ECR, Lambda, and API Gateway.
+
+Dockerized Flask backend for [zacharygeorgebaker.com](https://www.zacharygeorgebaker.com).
+
+- **Frontend repository:** [github.com/zgbaker54/zacharygeorgebaker](https://github.com/zgbaker54/zacharygeorgebaker)
+- **Backend repository (you are here):** [github.com/zgbaker54/zacharygeorgebaker_backend](https://github.com/zgbaker54/zacharygeorgebaker_backend)
+
+The backend is built with Flask and deployed on Railway. It provides API endpoints consumed by the frontend.
 
 ## Table of Contents
 
