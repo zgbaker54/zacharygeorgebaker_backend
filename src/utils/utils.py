@@ -100,9 +100,11 @@ def annotateLetters(guessLetters, answerStr: str):
     for (idx, guessLetter) in enumerate(guessLetters):
         if idx in exactIndexes:
             continue
-        print(guessLetter['letter'], answer)
         if guessLetter['letter'] in answer:
             guessLetter['evaluation'] = 'misplaced'
+            # consume the matched occurrence so a repeated guess letter can't be
+            # marked 'misplaced' more times than the letter appears in the answer
+            answer[answer.index(guessLetter['letter'])] = ''
         else:
             guessLetter['evaluation'] = 'wrong'
     return guessLetters

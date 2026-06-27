@@ -12,6 +12,7 @@ The backend is built with Flask and deployed on Railway. It provides API endpoin
 - [Local development setup](#local-development-setup)
 - [Install venv for development](#install-venv-for-development)
 - [Run the backend locally](#run-the-backend-locally)
+- [Running tests](#running-tests)
 - [Build and run with Docker](#build-and-run-with-docker)
 - [Deploying to Railway](#deploying-to-railway)
 - [Adding words to the 7Letters game database](#adding-words-to-the-7letters-game-database)
@@ -64,6 +65,33 @@ python app.py;
 This starts the Flask development server on `http://localhost:8000`. The server will reload automatically when you make changes to `app.py`.
 
 You can test the available routes using [Bruno](https://www.usebruno.com/).
+
+## Running tests
+
+Unit tests live in the `tests/` directory and run with [pytest](https://docs.pytest.org/).
+
+`pytest` is a development-only dependency and is not part of `requirements.txt` (which is the production/Docker manifest). Install it into your virtual environment if you haven't already:
+
+```
+source venv/bin/activate;
+pip install pytest;
+```
+
+Run the full test suite from the project root:
+
+```
+pytest
+```
+
+Useful variations:
+
+```
+pytest -v                                   # verbose, one line per test
+pytest tests/test_annotate_letters.py       # run a single test file
+pytest -k annotate                          # run tests matching a keyword
+```
+
+> **Note:** Run pytest from the project root so the `src` package imports correctly. A root-level `conftest.py` adds the project root to `sys.path` to make this reliable.
 
 ## Build and run with Docker
 

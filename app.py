@@ -132,7 +132,7 @@ def confirmWordOfTheDay():
     return response
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------
-# receive a 7-letter wordle guess sequence from the frontend and annotate each guess letter
+# receive a 7-letter guess sequence from the frontend and annotate each guess letter
 # with its evaluation (exact, misplaced, or wrong) against the word of the day
 @app.route('/annotate7LettersGuessSequence', methods=['POST'])
 def annotate7LettersGuessSequence() -> Response:

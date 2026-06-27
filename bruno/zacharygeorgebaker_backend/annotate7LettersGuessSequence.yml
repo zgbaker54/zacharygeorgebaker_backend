@@ -15,31 +15,31 @@ http:
           {
             "letters": [
               {
-                "letter": "a",
+                "letter": "A",
                 "evaluation": null
               },
               {
-                "letter": "b",
+                "letter": "B",
                 "evaluation": null
               },
               {
-                "letter": "l",
+                "letter": "L",
                 "evaluation": null
               },
               {
-                "letter": "a",
+                "letter": "A",
                 "evaluation": null
               },
               {
-                "letter": "t",
+                "letter": "T",
                 "evaluation": null
               },
               {
-                "letter": "e",
+                "letter": "E",
                 "evaluation": null
               },
               {
-                "letter": "d",
+                "letter": "D",
                 "evaluation": null
               }
             ],
