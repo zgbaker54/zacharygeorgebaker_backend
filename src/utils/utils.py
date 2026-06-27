@@ -66,7 +66,7 @@ def AnnotateGuessSequence(guessSequence: dict) -> tuple[dict, str]:
     snackbarMessage = ""
     wotdResp = GetWordOfTheDay()
     date = wotdResp["date"]
-    answer = wotdResp["word"]
+    answer = wotdResp["word"].upper()
     if len(answer) == 0:
         raise AssertionError("No word of the day available")
     if guessSequence['date'] != date:
@@ -86,10 +86,12 @@ def AnnotateGuessSequence(guessSequence: dict) -> tuple[dict, str]:
 # evaluate each letter in a single guess against the answer and set the letter's
 # 'evaluation' field to 'exact', 'misplaced', or 'wrong'
 def annotateLetters(guessLetters, answerStr: str):
+    for (idx, guessLetter) in enumerate(guessLetters):  # capitalize all letters
+        guessLetters[idx]['letter'] = guessLetters[idx]['letter'].upper()
     answer = list(answerStr)
     exactIndexes = []
     for (idx, guessLetter) in enumerate(guessLetters):
-        if guessLetter['letter'].upper() == answer[idx].upper():
+        if guessLetter['letter'] == answer[idx]:
             guessLetters[idx]['evaluation'] = 'exact'
             exactIndexes.append(idx)
     for (idx, _) in enumerate(answer):
@@ -98,6 +100,7 @@ def annotateLetters(guessLetters, answerStr: str):
     for (idx, guessLetter) in enumerate(guessLetters):
         if idx in exactIndexes:
             continue
+        print(guessLetter['letter'], answer)
         if guessLetter['letter'] in answer:
             guessLetter['evaluation'] = 'misplaced'
         else:
