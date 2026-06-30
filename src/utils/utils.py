@@ -6,7 +6,7 @@ import copy
 # load all valid 7-letter words into a set for fast lookups
 _VALID_7_LETTER_WORDS: set[str] = set()
 try:
-    with open('wordList7Letters.txt', 'r') as f:
+    with open('word-management/wordList7Letters.txt', 'r') as f:
         for line in f:
             word = line.strip()
             if word:

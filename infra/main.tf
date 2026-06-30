@@ -1,4 +1,4 @@
-# set up terraform
+# Set up Terraform
 terraform {
     required_providers {
         aws = {
@@ -6,7 +6,7 @@ terraform {
             version = "~> 5.0"
         }
     }
-    # allows s3 to track tf state instead of this being stored locally
+    # Store state in S3 for team access and durability
     backend "s3" {
         bucket = "zacharygeorgebaker-tf-state-storage"
         key = "backend/terraform.tfstate"
@@ -15,18 +15,18 @@ terraform {
     }
 }
 
-# local values to be referenced
+# Local values for reuse throughout config
 locals {
     tf_state_bucket_name = "zacharygeorgebaker-tf-state-storage"
     region = "us-west-1"
 }
 
-# provider
+# Provider configuration
 provider "aws" {
     region = local.region
 }
 
-# allows tf state to be stored in S3 instead of locally untracked
+# Track Terraform state in S3 instead of locally
 resource "aws_s3_bucket" "tf_state" {
     bucket = local.tf_state_bucket_name
 }
@@ -38,16 +38,17 @@ resource "aws_s3_bucket_versioning" "state_versioning" {
 }
 
 # --------------------------------------------------------------------------------
-# LAMBDA -------------------------------------------------------------------------
+# LAMBDA
+# --------------------------------------------------------------------------------
 
-# lambda function's script
+# Lambda function archive
 data "archive_file" "lambda_zip" {
     type = "zip"
     source_file = "${path.module}/../src/utils/check_tomorrows_word.py"
     output_path = "${path.module}/check_tomorrows_word.zip"
 }
 
-# lambda role
+# Lambda execution role
 resource "aws_iam_role" "lambda_exec_role" {
     name = "zgb_lambda_execution_role"
     assume_role_policy = jsonencode({
@@ -60,7 +61,7 @@ resource "aws_iam_role" "lambda_exec_role" {
     })
 }
 
-# lambda policy
+# Lambda IAM policy
 resource "aws_iam_role_policy" "lambda_policy" {
     name = "zgb_lambda_execution_role"
     role = aws_iam_role.lambda_exec_role.id
@@ -86,7 +87,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
     })
 }
 
-# lambda function
+# Lambda function definition
 resource "aws_lambda_function" "date_checker" {
     filename = data.archive_file.lambda_zip.output_path
     function_name = "zgb_daily_date_checker"
@@ -103,23 +104,24 @@ resource "aws_lambda_function" "date_checker" {
 }
 
 # --------------------------------------------------------------------------------
-# EVENTBRIDGE --------------------------------------------------------------------
+# EVENTBRIDGE
+# --------------------------------------------------------------------------------
 
-# cron trigger to once once per day at midnight UTC
+# Trigger Lambda once per day at midnight UTC
 resource "aws_cloudwatch_event_rule" "daily_cron" {
     name = "zgb-daily-date-check"
     description = "Triggers Lambda function daily to verify tomorrow's data exists."
     schedule_expression = "cron(0 0 * * ? *)"
 }
 
-# lambda trigger
+# Lambda trigger target
 resource "aws_cloudwatch_event_target" "trigger_lambda" {
     rule = aws_cloudwatch_event_rule.daily_cron.name
     target_id = "TriggerCheckerLambda"
     arn = aws_lambda_function.date_checker.arn
 }
 
-# permission for EventBridge to invoke the lambda
+# Permission for EventBridge to invoke the Lambda
 resource "aws_lambda_permission" "allow_eventbridge" {
     statement_id = "AllowExecutionFromEventBridge"
     action = "lambda:InvokeFunction"
@@ -129,14 +131,14 @@ resource "aws_lambda_permission" "allow_eventbridge" {
 }
 
 # --------------------------------------------------------------------------------
-# SNS ----------------------------------------------------------------------------
+# SNS
+# --------------------------------------------------------------------------------
 
-# sns
 resource "aws_sns_topic" "word_alerts" {
     name = "zgb_dynamodb-daily-word-alerts"
 }
 
-# where sns sends it's notifications to
+# Subscribe the alert email to the SNS topic
 resource "aws_sns_topic_subscription" "email_sub" {
     topic_arn = aws_sns_topic.word_alerts.arn
     protocol = "email"
@@ -144,7 +146,8 @@ resource "aws_sns_topic_subscription" "email_sub" {
 }
 
 # --------------------------------------------------------------------------------
-# DYNAMODB -----------------------------------------------------------------------
+# DYNAMODB
+# --------------------------------------------------------------------------------
 
 resource "aws_dynamodb_table" "seven_letters_table" {
     name = "ZacharyGeorgeBaker-7Letters"
