@@ -2,3 +2,18 @@ venv/
 __pycache__/
 .DS_store
 .env
+
+# Local Terraform directories and caches
+**/.terraform/*
+
+# Ignore local state files (they contain plain-text infrastructure details)
+*.tfstate
+*.tfstate.*
+
+# Crash logs and CLI histories
+crash.log
+*.tfvars
+*.tfvars.json
+
+# Ignore the automatic zip files generated during deployment
+*.zip
