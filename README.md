@@ -174,3 +174,38 @@ Each word is assigned a sequential date starting from the chosen date, and uploa
 | `Word`         | String | The 7-letter word                                |
 
 The script also checks for duplicate words already in the table and raises an error if any are found.
+
+## Terraform
+
+Install tf
+```
+brew tap hashicorp/tap
+brew install hashicorp/tap/terraform
+```
+
+Alias terraform command to tf
+```bash
+# add this to your .zshrc
+alias tf="terraform"
+```
+
+Confirm `tf` is working
+```
+tf -v
+```
+
+Set up tf dependencies expressed in `main.tf`
+```
+cd infra/
+tf init
+```
+
+Check what this `main.tf` will do on AWS (add modify or destroy resources)
+```
+tf plan
+```
+
+apply the changes to aws with this command:
+```
+tf apply
+```
