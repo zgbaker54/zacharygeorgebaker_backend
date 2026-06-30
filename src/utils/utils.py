@@ -1,18 +1,39 @@
 import boto3
 from datetime import datetime
 import copy
+import os
 
 
 # load all valid 7-letter words into a set for fast lookups
 _VALID_7_LETTER_WORDS: set[str] = set()
-try:
-    with open('word-management/wordList7Letters.txt', 'r') as f:
-        for line in f:
-            word = line.strip()
-            if word:
-                _VALID_7_LETTER_WORDS.add(word)
-except FileNotFoundError:
-    pass  # file not present in all environments (e.g. Lambda)
+
+def _load_word_list():
+    """Load the 7-letter word list from file, trying multiple possible paths."""
+    possible_paths = [
+        'wordList7Letters.txt',  # deployed environment (copied to root)
+        'word-management/wordList7Letters.txt',  # local development
+        os.path.join(os.path.dirname(__file__), '../../word-management/wordList7Letters.txt'),  # relative to utils.py
+    ]
+    for path in possible_paths:
+        try:
+            with open(path, 'r') as f:
+                words_loaded = 0
+                for line in f:
+                    word = line.strip()
+                    if word:
+                        _VALID_7_LETTER_WORDS.add(word)
+                        words_loaded += 1
+                print(f"Successfully loaded {words_loaded} words from {path}")
+                return
+        except FileNotFoundError:
+            continue
+    # If we get here, none of the paths worked
+    raise FileNotFoundError(
+        f"Could not find wordList7Letters.txt in any of the expected locations: {possible_paths}"
+    )
+
+# Load the word list at module import time
+_load_word_list()
 
 
 # get the corresponding `AssetValue` based on the `AssetName` key from the dynamoDB database table named `ZacharyGeorgeBaker-Assets`
